@@ -2,8 +2,13 @@ from flask import Flask, request
 from flask_cors import CORS
 import flaskServer.database.models as DB
 from flaskServer.database import db 
+from flaskServer.database import queries,mutations
 from flask_migrate import Migrate
 import hashlib
+from ariadne import load_schema_from_path, make_executable_schema, \
+    graphql_sync, snake_case_fallback_resolvers, ObjectType, gql,exceptions
+from ariadne.explorer import ExplorerGraphiQL
+from flask import request, jsonify
 
 
 
@@ -20,7 +25,18 @@ def server()->Flask:
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
     DB.db.init_app(app)
     migrate=Migrate(app,DB.db)
-
+    
+    
+    try:
+        type_defs=gql(load_schema_from_path("C:\VGBPython\graphql-flask\\flask1\\flaskServer\schema.graphql"))
+    except exceptions.GraphQLFileSyntaxError:
+        return None
+    query=ObjectType("Query")
+    mutation=ObjectType("Mutation")
+    
+    mutation.set_field("register",mutations.register)
+    query.set_field("getAll",queries.getAll_resolver)
+    schema = make_executable_schema(type_defs, query, mutation)
     
     @app.route("/hello")
     def hello():
@@ -72,7 +88,22 @@ def server()->Flask:
                 }for car in cars
             ]
             return {"count":len(res),"cars":res}
-        
+    
+    @app.route("/graphql",methods=["GET"])
+    def graphql_playground():
+        return ExplorerGraphiQL().html(None),200
+    
+    @app.route("/graphql", methods=["POST"])
+    def graphql_server():
+        data = request.get_json()
+        success, result = graphql_sync(
+            schema,
+            data,
+            context_value=request,
+            debug=app.debug
+        )
+        status_code = 200 if success else 400
+        return jsonify(result), status_code
 
     return app
 

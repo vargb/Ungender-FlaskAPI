@@ -1,0 +1,46 @@
+scalar Time
+
+input Login {
+  phno: String!
+  password: String!
+}
+
+input Signup {
+  userid: String
+  fname: String
+  lname: String
+  phno: String!
+  password: String!
+}
+
+input GetCar {
+  carid: ID!
+  userid: String!
+}
+
+type User {
+  userid: String
+  fname: String
+  lname: String
+  phno: String
+  password: String
+  carid: String
+}
+
+type Garage {
+  Carid: String!
+  LastUsedDate: String
+  Available: Boolean
+}
+
+type Query {
+  getAll: [Garage]
+}
+
+type Mutation {
+  register(input: Signup!): User
+  signin(input: Login!): String
+  signout(input: Login!): String
+  getcar(input: GetCar!): User
+  returncar(input: GetCar!): User
+}
