@@ -3,9 +3,8 @@ import hashlib
 from flask import jsonify,request,make_response
 from graphql import GraphQLError
 from flask_jwt_extended import (JWTManager, jwt_required,  get_jwt_identity,
-                                create_access_token, create_refresh_token, 
-                                set_access_cookies, set_refresh_cookies, 
-                                unset_jwt_cookies,unset_access_cookies)
+                                create_access_token, unset_jwt_cookies,
+                                set_access_cookies)
 import datetime
 
 def register(_, info, input):
@@ -37,25 +36,30 @@ def encrypt_string(hash_string):
 def login(_,info,input):
     try:
         data=UserModel.query.filter_by(phno=input['phno']).first()
-        if data.password!=input.get('password'):
-            return GraphQLError("invalid login credentials, check again!")
-        access_tokens=create_access_token(identity=input['phno'])
-        resp=jsonify({"login":True})
-        set_access_cookies(resp,access_tokens)
-        return str("successful "+ access_tokens)
+        if data.password==input.get('password'):
+            access_tokens=create_access_token(identity=input['phno'])
+            resp = jsonify({"login": True})
+            set_access_cookies(resp, access_tokens)
+            return str("successful "+ access_tokens)
+        return GraphQLError("invalid login credentials, check again!")
     except Exception as error:
         return str(error)
-    
-# def logout(_,info,input):
-#     try:
-#         data=UserModel.query.filter_by(phno=input['phno']).first()
-#         if data.password!=input.get('password'):
-#             return GraphQLError("invalid logout credentials, check again!")
-#         unset_access_cookies(get_jwt_identity(input['phno']))
-#     except Exception as error:
-#         return str(error)
 
+@jwt_required()
+def logout(_,info,input):
+    try:
+        data=UserModel.query.filter_by(phno=input['phno']).first()
+        if data.password==input.get('password'):
+            resp=resp = make_response(jsonify({"logout": True}))
+            unset_jwt_cookies(resp)
+            return "Logout Successful. Thank You!"
+        return GraphQLError("invalid logout credentials, check again!")        
+    except Exception as error:
+        return str(error)
+
+@jwt_required()
 def getCar(_,info,input):
+    get_currentUser=get_jwt_identity()
     try:
         user=UserModel.query.filter_by(phno=input['phno']).first()
         car=CarModel.query.filter_by(carid=input['carid']).first()
@@ -70,7 +74,9 @@ def getCar(_,info,input):
     except Exception as error:
         return GraphQLError(error)
 
+@jwt_required()
 def returnCar(_,info,input):
+    get_currentUser=get_jwt_identity()
     try:
         user=UserModel.query.filter_by(phno=input['phno']).first()
         car=CarModel.query.filter_by(carid=input['carid']).first()

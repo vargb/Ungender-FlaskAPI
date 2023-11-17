@@ -33,7 +33,7 @@ class UserModel(Models):
 class CarModel(Models):
     __tablename__ = "garage"
     
-    carid = db.Column(db.Integer, primary_key=True)
+    carid = db.Column(db.Integer, primary_key=True,unique=True)
     lastusedDate = db.Column(db.String())
     available = db.Column(db.Boolean())
 

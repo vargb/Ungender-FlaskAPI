@@ -28,6 +28,7 @@ def server(srv:Flask)->Flask:
     mutation.set_field("signin",mutations.login)
     mutation.set_field("getcar",mutations.getCar)
     mutation.set_field("returncar",mutations.returnCar)
+    
     query.set_field("getAll",queries.getAll_resolver)
     schema = make_executable_schema(type_defs, query, mutation)
     
