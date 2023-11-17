@@ -14,7 +14,7 @@ class UserModel(Models):
     fname = db.Column(db.String())
     lname = db.Column(db.String())
     carid = db.Column(db.String())
-    phno = db.Column(db.String())
+    phno = db.Column(db.String(),unique=True)
     password = db.Column(db.String())
 
     def __init__(self,userid:str, fname:str, lname:str, carid:str, phno:str, password:str,id:str) -> None:

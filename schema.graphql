@@ -14,8 +14,8 @@ input Signup {
 }
 
 input GetCar {
-  carid: ID!
-  userid: String!
+  phno: ID!
+  carid: String!
 }
 
 type User {

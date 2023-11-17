@@ -1,30 +1,20 @@
-from flask import Flask, request
-from flask_cors import CORS
+from flask import Flask, request,jsonify
 import flaskServer.database.models as DB
-from flaskServer.database import db 
 from flaskServer.database import queries,mutations
 from flask_migrate import Migrate
 import hashlib
 from ariadne import load_schema_from_path, make_executable_schema, \
-    graphql_sync, snake_case_fallback_resolvers, ObjectType, gql,exceptions
+    graphql_sync, ObjectType, gql,exceptions
 from ariadne.explorer import ExplorerGraphiQL
-from flask import request, jsonify
-
 
 
 def encrypt_string(hash_string):
     sha_signature = hashlib.sha256(hash_string.encode()).hexdigest()
     return sha_signature
 
-
-def server()->Flask:
-    app = Flask(__name__)
-    CORS(app)
-
-    app.config["SQLALCHEMY_DATABASE_URI"] = db.dbUrl
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
-    DB.db.init_app(app)
-    migrate=Migrate(app,DB.db)
+def server(srv:Flask)->Flask:
+    DB.db.init_app(srv)
+    migrate=Migrate(srv,DB.db)
     
     
     try:
@@ -35,19 +25,22 @@ def server()->Flask:
     mutation=ObjectType("Mutation")
     
     mutation.set_field("register",mutations.register)
+    mutation.set_field("signin",mutations.login)
+    mutation.set_field("getcar",mutations.getCar)
+    mutation.set_field("returncar",mutations.returnCar)
     query.set_field("getAll",queries.getAll_resolver)
     schema = make_executable_schema(type_defs, query, mutation)
     
-    @app.route("/hello")
+    @srv.route("/hello")
     def hello():
         return {"listen to this":"https://youtu.be/3h4kS6y8hpE?feature=shared"}
 
-    @app.route("/user",methods=['POST','GET'])
+    @srv.route("/user",methods=['POST','GET'])
     def handleUser():
         if request.method=='POST':
             if request.is_json:
                 data=request.get_json()
-                newUser=DB.UserModel(userid=data['userid'],fname=data['fname'],lname=data['lname'],carid=data['carid'],phno=data['phno'],password=data['password'],id=encrypt_string(data['phno']))
+                newUser=DB.UserModel(userid=data['userid'],fname=data['fname'],lname=data['lname'],phno=data['phno'],password=data['password'],id=encrypt_string(data['phno']))
                 DB.db.session.add(newUser)
                 DB.db.session.commit()
                 return {"HeadsUp":f"user {newUser.userid} has been created successfully"}
@@ -67,7 +60,7 @@ def server()->Flask:
             ]
             return {"count":len(res),"users":res}
         
-    @app.route("/car",methods=['POST','GET'])
+    @srv.route("/car",methods=['POST','GET'])
     def handleCar():
         if request.method=='POST':
             if request.is_json:
@@ -89,23 +82,20 @@ def server()->Flask:
             ]
             return {"count":len(res),"cars":res}
     
-    @app.route("/graphql",methods=["GET"])
+    @srv.route("/graphql",methods=["GET"])
     def graphql_playground():
         return ExplorerGraphiQL().html(None),200
     
-    @app.route("/graphql", methods=["POST"])
+    @srv.route("/graphql", methods=["POST"])
     def graphql_server():
         data = request.get_json()
         success, result = graphql_sync(
             schema,
             data,
             context_value=request,
-            debug=app.debug
+            debug=srv.debug
         )
         status_code = 200 if success else 400
         return jsonify(result), status_code
 
-    return app
-
-
-app=server()
+    return srv
