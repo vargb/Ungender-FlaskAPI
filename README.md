@@ -2,4 +2,6 @@
 
 Postgres CRUD is working.
 
-Implementing GraphQL...
+GraphQL CRUD is working.
+
+Auth Middleware is working.
